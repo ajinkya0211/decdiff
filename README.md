@@ -1,2 +1,2 @@
-# decdiff
+# Decision Diffuser
 CS726 project
