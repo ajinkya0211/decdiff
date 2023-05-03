@@ -4,7 +4,7 @@ import einops
 from scipy.spatial.transform import Rotation as R
 import pdb
 
-from .d4rl import load_environment
+# from .d4rl import load_environment
 
 #-----------------------------------------------------------------------------#
 #-------------------------------- general api --------------------------------#
