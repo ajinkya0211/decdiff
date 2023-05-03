@@ -43,10 +43,6 @@ class ReplayBuffer:
         self.keys = list(path.keys())
 
     def _add_attributes(self):
-        '''
-            can access fields with `buffer.observations`
-            instead of `buffer['observations']`
-        '''
         for key, val in self._dict.items():
             setattr(self, key, val)
 
@@ -59,7 +55,6 @@ class ReplayBuffer:
         dim = array.shape[-1]
         shape = (self.max_n_episodes, self.max_path_length, dim)
         self._dict[key] = np.zeros(shape, dtype=np.float32)
-        # print(f'[ utils/mujoco ] Allocated {key} with size {shape}')
 
     def add_path(self, path):
         path_length = len(path['observations'])
@@ -68,24 +63,17 @@ class ReplayBuffer:
         if path['terminals'].any():
             assert (path['terminals'][-1] == True) and (not path['terminals'][:-1].any())
 
-        ## if first path added, set keys based on contents
         self._add_keys(path)
 
-        ## add tracked keys in path
         for key in self.keys:
             array = atleast_2d(path[key])
             if key not in self._dict: self._allocate(key, array)
             self._dict[key][self._count, :path_length] = array
 
-        ## penalize early termination
         if path['terminals'].any() and self.termination_penalty is not None:
             assert not path['timeouts'].any(), 'Penalized a timeout episode for early termination'
             self._dict['rewards'][self._count, path_length - 1] += self.termination_penalty
-
-        ## record path length
         self._dict['path_lengths'][self._count] = path_length
-
-        ## increment path counter
         self._count += 1
 
     def truncate_path(self, path_ind, step):
@@ -94,7 +82,6 @@ class ReplayBuffer:
         self._dict['path_lengths'][path_ind] = new
 
     def finalize(self):
-        ## remove extra slots
         for key in self.keys + ['path_lengths']:
             self._dict[key] = self._dict[key][:self._count]
         self._add_attributes()
