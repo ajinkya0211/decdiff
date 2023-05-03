@@ -4,10 +4,6 @@ import pdb
 
 POINTMASS_KEYS = ['observations', 'actions', 'next_observations', 'deltas']
 
-#-----------------------------------------------------------------------------#
-#--------------------------- multi-field normalizer --------------------------#
-#-----------------------------------------------------------------------------#
-
 class DatasetNormalizer:
     def __init__(self, dataset, normalizer, path_lengths=None):
         # Flatten the dataset using the provided path lengths
@@ -51,10 +47,6 @@ def flatten_dataset(dataset, path_lengths):
         flattened[key] = np.concatenate([x[:length] for x, length in zip(xs, path_lengths)], axis=0)
     return flattened
 
-#-----------------------------------------------------------------------------#
-#------------------------------- @TODO: remove? ------------------------------#
-#-----------------------------------------------------------------------------#
-
 class PointMassDatasetNormalizer(DatasetNormalizer):
     
     def __init__(self, preprocess_fns, dataset, normalizer, keys=POINTMASS_KEYS):
@@ -69,10 +61,6 @@ class PointMassDatasetNormalizer(DatasetNormalizer):
             key: normalizer(dataset[key].reshape(-1, dataset[key].shape[-1]))
             for key in keys
         }
-
-#-----------------------------------------------------------------------------#
-#-------------------------- single-field normalizers -------------------------#
-#-----------------------------------------------------------------------------#
 
 class Normalizer:
     '''
@@ -177,10 +165,6 @@ class SafeLimitsNormalizer(LimitsNormalizer):
                 )
                 self.mins -= eps
                 self.maxs += eps
-
-#-----------------------------------------------------------------------------#
-#------------------------------- CDF normalizer ------------------------------#
-#-----------------------------------------------------------------------------#
 
 class CDFNormalizer(Normalizer):
     '''
