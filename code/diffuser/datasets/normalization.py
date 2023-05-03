@@ -12,7 +12,6 @@ class DatasetNormalizer:
 
     def __init__(self, dataset, normalizer, path_lengths=None):
         dataset = flatten(dataset, path_lengths)
-
         self.observation_dim = dataset['observations'].shape[1]
         self.action_dim = dataset['actions'].shape[1]
 
@@ -298,4 +297,3 @@ def atleast_2d(x):
     if x.ndim < 2:
         x = x[:,None]
     return x
-
