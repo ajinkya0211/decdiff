@@ -12,10 +12,6 @@ from contextlib import (
 
 @contextmanager
 def suppress_output():
-    """
-        A context manager that redirects stdout and stderr to devnull
-        https://stackoverflow.com/a/52442331
-    """
     with open(os.devnull, 'w') as fnull:
         with redirect_stderr(fnull) as err, redirect_stdout(fnull) as out:
             yield (err, out)
@@ -23,10 +19,6 @@ def suppress_output():
 with suppress_output():
     ## d4rl prints out a variety of warnings
     import d4rl
-
-#-----------------------------------------------------------------------------#
-#-------------------------------- general api --------------------------------#
-#-----------------------------------------------------------------------------#
 
 def load_environment(name):
     if type(name) != str:
@@ -53,20 +45,6 @@ def get_dataset(env):
     return dataset
 
 def sequence_dataset(env, preprocess_fn):
-    """
-    Returns an iterator through trajectories.
-    Args:
-        env: An OfflineEnv object.
-        dataset: An optional dataset to pass in for processing. If None,
-            the dataset will default to env.get_dataset()
-        **kwargs: Arguments to pass to env.get_dataset().
-    Returns:
-        An iterator through dictionaries with keys:
-            observations
-            actions
-            rewards
-            terminals
-    """
     dataset = get_dataset(env)
     dataset = preprocess_fn(dataset)
 
@@ -101,15 +79,7 @@ def sequence_dataset(env, preprocess_fn):
 
         episode_step += 1
 
-
-#-----------------------------------------------------------------------------#
-#-------------------------------- maze2d fixes -------------------------------#
-#-----------------------------------------------------------------------------#
-
 def process_maze2d_episode(episode):
-    '''
-        adds in `next_observations` field to episode
-    '''
     assert 'next_observations' not in episode
     length = len(episode['observations'])
     next_observations = episode['observations'][1:].copy()
