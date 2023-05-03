@@ -35,8 +35,8 @@ class LinearAttention(nn.Module):
     def __init__(self, dim, heads = 4, dim_head = 128):
         super().__init__()
         self.heads = heads
-        hidden_dim = dim_head * heads
-        self.to_qkv = nn.Conv2d(dim, hidden_dim * 3, 1, bias = False)
+        hidden_dim = dim_head * heads                                       
+        self.to_qkv = nn.Conv2d(dim, hidden_dim * 3, 1, bias = False)       #query, key and value tensor
         self.to_out = nn.Conv2d(hidden_dim, dim, 1)
 
     def forward(self, x):
@@ -218,12 +218,12 @@ class TemporalUnet(nn.Module):
                 returns_embed = 0*returns_embed
             t = torch.cat([t, returns_embed], dim=-1)
 
-        h = []
+        layers = []
 
         for resnet, resnet2, downsample in self.downs:
             x = resnet(x, t)
             x = resnet2(x, t)
-            h.append(x)
+            layers.append(x)
             x = downsample(x)
 
         x = self.mid_block1(x, t)

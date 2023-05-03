@@ -13,16 +13,16 @@ import diffuser.utils as utils
 #---------------------------------- modules ----------------------------------#
 #-----------------------------------------------------------------------------#
 
-class SinusoidalPosEmb(nn.Module):
+class SinusoidalPosEmb(nn.Module):                                          #sinusoidal encoding
     def __init__(self, dim):
         super().__init__()
         self.dim = dim
 
     def forward(self, x):
         device = x.device
-        half_dim = self.dim // 2
-        emb = math.log(10000) / (half_dim - 1)
-        emb = torch.exp(torch.arange(half_dim, device=device) * -emb)
+        dim_red = self.dim // 2
+        emb = math.log(10000) / (dim_red - 1)
+        emb = torch.exp(torch.arange(dim_red, device=device) * -emb)
         emb = x[:, None] * emb[None, :]
         emb = torch.cat((emb.sin(), emb.cos()), dim=-1)
         return emb
@@ -57,7 +57,7 @@ class Conv1dBlock(nn.Module):
             act_fn = nn.SiLU()
 
         self.block = nn.Sequential(
-            nn.Conv1d(inp_channels, out_channels, kernel_size, padding=kernel_size // 2),
+            nn.Conv1d(inp_channels, out_channels, kernel_size, padding=kernel_size // 2),   #padding of kernel/2 to retain same size
             Rearrange('batch channels horizon -> batch channels 1 horizon'),
             nn.GroupNorm(n_groups, out_channels),
             Rearrange('batch channels 1 horizon -> batch channels horizon'),
@@ -77,18 +77,18 @@ def extract(a, t, x_shape):
     out = a.gather(-1, t)
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
 
-def cosine_beta_schedule(timesteps, s=0.008, dtype=torch.float32):
+def cosine_beta_schedule(timesteps, s=0.008, dtype=torch.float32):              #cosine schedule adds noise slower than linear schedule => more steps
     """
     cosine schedule
-    as proposed in https://openreview.net/forum?id=-NEXDKk8gZ
+    as proposed in https://openreview.net/forum?id=-NEXDKk8gZ                   
     """
     steps = timesteps + 1
     x = np.linspace(0, steps, steps)
-    alphas_cumprod = np.cos(((x / steps) + s) / (1 + s) * np.pi * 0.5) ** 2
-    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
+    alphas_cumprod = np.cos(((x / steps) + s) / (1 + s) * np.pi * 0.5) ** 2      
+    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]                          
     betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
     betas_clipped = np.clip(betas, a_min=0, a_max=0.999)
-    return torch.tensor(betas_clipped, dtype=dtype)
+    return torch.tensor(betas_clipped, dtype=dtype) 
 
 def apply_conditioning(x, conditions, action_dim):
     for t, val in conditions.items():
@@ -112,9 +112,9 @@ class WeightedLoss(nn.Module):
                 [ batch_size x horizon x transition_dim ]
         '''
         loss = self._loss(pred, targ)
-        weighted_loss = (loss * self.weights).mean()
+        weight_loss = (loss * self.weights).mean()
         a0_loss = (loss[:, 0, :self.action_dim] / self.weights[0, :self.action_dim]).mean()
-        return weighted_loss, {'a0_loss': a0_loss}
+        return weight_loss, {'a0_loss': a0_loss}
 
 class WeightedStateLoss(nn.Module):
 
@@ -128,8 +128,8 @@ class WeightedStateLoss(nn.Module):
                 [ batch_size x horizon x transition_dim ]
         '''
         loss = self._loss(pred, targ)
-        weighted_loss = (loss * self.weights).mean()
-        return weighted_loss, {'a0_loss': weighted_loss}
+        weight_loss = (loss * self.weights).mean()
+        return weight_loss, {'a0_loss': weight_loss}
 
 class ValueLoss(nn.Module):
     def __init__(self, *args):
@@ -139,7 +139,7 @@ class ValueLoss(nn.Module):
     def forward(self, pred, targ):
         loss = self._loss(pred, targ).mean()
 
-        if len(pred) > 1:
+        if len(pred) > 1:                                               #calculate correlation values
             corr = np.corrcoef(
                 utils.to_np(pred).squeeze(),
                 utils.to_np(targ).squeeze()
