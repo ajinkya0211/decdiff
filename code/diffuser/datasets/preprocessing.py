@@ -4,11 +4,6 @@ import einops
 from scipy.spatial.transform import Rotation as R
 import pdb
 
-# from .d4rl import load_environment
-
-#-----------------------------------------------------------------------------#
-#-------------------------------- general api --------------------------------#
-#-----------------------------------------------------------------------------#
 
 def compose(*fns):
     def _fn(x):
@@ -28,12 +23,6 @@ def get_policy_preprocess_fn(fn_names):
     for name in fn_names:
         fns.append(eval(name))
     return compose(*fns)
-
-#-----------------------------------------------------------------------------#
-#-------------------------- preprocessing functions --------------------------#
-#-----------------------------------------------------------------------------#
-
-#------------------------ @TODO: remove some of these ------------------------#
 
 def arctanh_actions(*args, **kwargs):
     epsilon = 1e-4
@@ -87,13 +76,6 @@ def maze2d_set_terminals(env):
         return dataset
 
     return _fn
-
-
-
-#-------------------------- block-stacking --------------------------#
-
-import numpy as np
-from scipy.spatial.transform import Rotation as R
 
 def blocks_quat_to_euler(observations):
     '''
@@ -170,10 +152,6 @@ def blocks_euler_to_quat_2d(observations):
         ], axis=-1)
 
     return X
-
-import numpy as np
-from scipy.spatial.transform import Rotation as R
-import einops
 
 def blocks_euler_to_quat(paths):
     quats = []
