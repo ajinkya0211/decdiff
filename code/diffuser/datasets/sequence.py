@@ -8,6 +8,7 @@ from .d4rl import load_environment, sequence_dataset
 from .normalization import DatasetNormalizer
 from .buffer import ReplayBuffer
 
+
 RewardBatch = namedtuple('Batch', 'trajectories conditions returns')
 Batch = namedtuple('Batch', 'trajectories conditions')
 ValueBatch = namedtuple('ValueBatch', 'trajectories conditions values')
@@ -44,8 +45,6 @@ class SequenceDataset(torch.utils.data.Dataset):
         self.normalize()
 
         print(fields)
-        # shapes = {key: val.shape for key, val in self.fields.items()}
-        # print(f'[ datasets/mujoco ] Dataset fields: {shapes}')
 
     def normalize(self, keys=['observations', 'actions']):
         '''
@@ -133,23 +132,14 @@ class CondSequenceDataset(torch.utils.data.Dataset):
         self.normalize()
 
         print(fields)
-        # shapes = {key: val.shape for key, val in self.fields.items()}
-        # print(f'[ datasets/mujoco ] Dataset fields: {shapes}')
 
     def normalize(self, keys=['observations', 'actions']):
-        '''
-            normalize fields that will be predicted by the diffusion model
-        '''
         for key in keys:
             array = self.fields[key].reshape(self.n_episodes*self.max_path_length, -1)
             normed = self.normalizer(array, key)
             self.fields[f'normed_{key}'] = normed.reshape(self.n_episodes, self.max_path_length, -1)
 
     def make_indices(self, path_lengths, horizon):
-        '''
-            makes indices for sampling from dataset;
-            each index maps to a datapoint
-        '''
         indices = []
         for i, path_length in enumerate(path_lengths):
             max_start = min(path_length - 1, self.max_path_length - horizon)
@@ -176,7 +166,6 @@ class CondSequenceDataset(torch.utils.data.Dataset):
 
         conditions = np.ones((self.horizon, 2*traj_dim)).astype(np.float32)
 
-        # Set up conditional masking
         conditions[t_step:,:self.action_dim] = 0
         conditions[:,traj_dim:] = 0
         conditions[t_step,traj_dim:traj_dim+self.action_dim] = 1
@@ -200,18 +189,12 @@ class CondSequenceDataset(torch.utils.data.Dataset):
 class GoalDataset(SequenceDataset):
 
     def get_conditions(self, observations):
-        '''
-            condition on both the current observation and the last observation in the plan
-        '''
         return {
             0: observations[0],
             self.horizon - 1: observations[-1],
         }
 
 class ValueDataset(SequenceDataset):
-    '''
-        adds a value field to the datapoints for training the value function
-    '''
 
     def __init__(self, *args, discount=0.99, **kwargs):
         super().__init__(*args, **kwargs)
@@ -227,3 +210,4 @@ class ValueDataset(SequenceDataset):
         value = np.array([value], dtype=np.float32)
         value_batch = ValueBatch(*batch, value)
         return value_batch
+
