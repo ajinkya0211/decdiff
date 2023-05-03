@@ -9,13 +9,13 @@ conda env create -f environment.yml
 conda activate decdiff
 export PYTHONPATH=/path/to/decdiff/
 ```
-#Training and Running
+# Training 
 To start training, run the following commmands
 
 ```bash
 python train.py
 ```
-
+# Running
 To evaluate the trained model, run the following commmands
 ```bash
 python eval.py
