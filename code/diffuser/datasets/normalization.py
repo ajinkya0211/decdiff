@@ -9,51 +9,46 @@ POINTMASS_KEYS = ['observations', 'actions', 'next_observations', 'deltas']
 #-----------------------------------------------------------------------------#
 
 class DatasetNormalizer:
-
     def __init__(self, dataset, normalizer, path_lengths=None):
-        dataset = flatten(dataset, path_lengths)
+        # Flatten the dataset using the provided path lengths
+        dataset = self.flatten_dataset(dataset, path_lengths)
+
+        # Get the dimensions of the observation and action spaces
         self.observation_dim = dataset['observations'].shape[1]
         self.action_dim = dataset['actions'].shape[1]
 
-        if type(normalizer) == str:
+        # If a string was passed for the normalizer, evaluate it as a Python expression
+        if isinstance(normalizer, str):
             normalizer = eval(normalizer)
 
+        # Initialize the normalizers for each key in the dataset
         self.normalizers = {}
         for key, val in dataset.items():
             try:
                 self.normalizers[key] = normalizer(val)
-            except:
-                print(f'[ utils/normalization ] Skipping {key} | {normalizer}')
-            # key: normalizer(val)
-            # for key, val in dataset.items()
+            except Exception as e:
+                print(f"[ utils/normalization ] Skipping {key} | {normalizer}: {e}")
 
     def __repr__(self):
-        string = ''
-        for key, normalizer in self.normalizers.items():
-            string += f'{key}: {normalizer}]\n'
-        return string
+        # Return a string representation of the normalizers
+        return '\n'.join([f"{key}: {normalizer}" for key, normalizer in self.normalizers.items()])
 
-    def __call__(self, *args, **kwargs):
-        return self.normalize(*args, **kwargs)
-
-    def normalize(self, x, key):
+    def __call__(self, x, key):
+        # Normalize the input data using the normalizer associated with the specified key
         return self.normalizers[key].normalize(x)
 
     def unnormalize(self, x, key):
+        # Unnormalize the input data using the normalizer associated with the specified key
         return self.normalizers[key].unnormalize(x)
 
-def flatten(dataset, path_lengths):
+def flatten_dataset(dataset, path_lengths):
     '''
-        flattens dataset of { key: [ n_episodes x max_path_lenth x dim ] }
-            to { key : [ (n_episodes * sum(path_lengths)) x dim ]}
+    Flattens a dataset of the form {key: [n_episodes x max_path_length x dim]} to {key: [(n_episodes * sum(path_lengths)) x dim]}
     '''
     flattened = {}
     for key, xs in dataset.items():
-        assert len(xs) == len(path_lengths)
-        flattened[key] = np.concatenate([
-            x[:length]
-            for x, length in zip(xs, path_lengths)
-        ], axis=0)
+        assert len(xs) == len(path_lengths), f"Length of xs ({len(xs)}) does not match length of path_lengths ({len(path_lengths)}) for key '{key}'"
+        flattened[key] = np.concatenate([x[:length] for x, length in zip(xs, path_lengths)], axis=0)
     return flattened
 
 #-----------------------------------------------------------------------------#
@@ -61,22 +56,17 @@ def flatten(dataset, path_lengths):
 #-----------------------------------------------------------------------------#
 
 class PointMassDatasetNormalizer(DatasetNormalizer):
-
+    
     def __init__(self, preprocess_fns, dataset, normalizer, keys=POINTMASS_KEYS):
+        
+        self.observation_dim = dataset['observations'].shape[1]
+        self.action_dim = dataset['actions'].shape[1]
 
-        reshaped = {}
-        for key, val in dataset.items():
-            dim = val.shape[-1]
-            reshaped[key] = val.reshape(-1, dim)
-
-        self.observation_dim = reshaped['observations'].shape[1]
-        self.action_dim = reshaped['actions'].shape[1]
-
-        if type(normalizer) == str:
+        if isinstance(normalizer, str):
             normalizer = eval(normalizer)
 
         self.normalizers = {
-            key: normalizer(reshaped[key])
+            key: normalizer(dataset[key].reshape(-1, dataset[key].shape[-1]))
             for key in keys
         }
 
